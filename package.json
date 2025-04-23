@@ -1,7 +1,8 @@
 {
   "dependencies": {
-    "axios": "^1.8.1",
+    "axios": "^1.8.4",
     "dockerode": "^4.0.4",
+    "dotenv": "^16.5.0",
     "express": "^4.21.2",
     "sqlite3": "^5.1.7"
   }

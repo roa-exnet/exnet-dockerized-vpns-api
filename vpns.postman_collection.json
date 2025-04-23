@@ -1,0 +1,41 @@
+{
+    "info": {
+      "name": "WireGuard VPN API",
+      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+      {
+        "name": "Crear nueva red VPN",
+        "request": {
+          "method": "POST",
+          "header": [{ "key": "Content-Type", "value": "application/json" }],
+          "body": {
+            "mode": "raw",
+            "raw": "{\n  \"peers\": 2,\n  \"networkName\": \"test-network\"\n}"
+          },
+          "url": {
+            "raw": "http://localhost:3000/api/deploy",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "3000",
+            "path": ["api", "deploy"]
+          }
+        }
+      },
+      {
+        "name": "Obtener peers por Deployment ID",
+        "request": {
+          "method": "GET",
+          "header": [],
+          "url": {
+            "raw": "http://localhost:3000/api/deployments/{{deploymentId}}/peers",
+            "protocol": "http",
+            "host": ["localhost"],
+            "port": "3000",
+            "path": ["api", "deployments", "{{deploymentId}}", "peers"]
+          }
+        }
+      }
+    ]
+  }
+  
