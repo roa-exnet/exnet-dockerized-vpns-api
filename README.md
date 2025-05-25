@@ -2,11 +2,8 @@ CREAR VPN (POST):
 http://localhost:3000/api/deploy
 
 {
-    "vpnPort": 3333,
-    "internalSubnet": "10.14.88.0",
     "peers": 30,
-    "serverUrl": "test",
-    "networkName": "ruptur"
+    "networkName": "test"
 }
 
 
