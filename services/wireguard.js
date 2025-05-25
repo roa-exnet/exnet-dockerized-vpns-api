@@ -1,4 +1,4 @@
-// services/wireguard.js - Gestión de contenedores WireGuard
+
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
@@ -8,7 +8,7 @@ const DEPLOYMENTS_BASE_DIR = path.join(__dirname, '..', 'deployments');
 
 function generateDockerComposeContent(params) {
   const { vpnPort, internalSubnet, peers, serverUrl, puid = 1000, pgid = 1000 } = params;
-  
+
   return `version: '3.8'
 
 services:
@@ -42,22 +42,39 @@ services:
 function generateDockerfileContent(params) {
   return `FROM linuxserver/wireguard
 
-# Exponer los puertos necesarios
 EXPOSE ${params.vpnPort}/udp
 `;
 }
 
+function addPersistentKeepaliveToPeers(configDir) {
+  const peerDirs = fs.readdirSync(configDir).filter(d => d.startsWith('peer'));
+
+  peerDirs.forEach(peer => {
+    const peerConf = path.join(configDir, peer, `${peer}.conf`);
+    if (fs.existsSync(peerConf)) {
+      let content = fs.readFileSync(peerConf, 'utf-8');
+
+      if (!content.includes('PersistentKeepalive')) {
+        content = content.replace(/\[Peer\][^[]*/g, match => {
+          return match.trim() + '\nPersistentKeepalive = 25\n';
+        });
+        fs.writeFileSync(peerConf, content, 'utf-8');
+      }
+    }
+  });
+}
+
 async function createDeployment(deploymentParams) {
   const { vpnPort, internalSubnet, peers, serverUrl, networkName } = deploymentParams;
-  
+
   const deploymentId = uuidv4();
-  
+
   const deploymentDir = path.join(DEPLOYMENTS_BASE_DIR, deploymentId);
   fs.mkdirSync(deploymentDir, { recursive: true });
-  
+
   const configDir = path.join(deploymentDir, 'config');
   fs.mkdirSync(configDir, { recursive: true });
-  
+
   const params = {
     vpnPort,
     internalSubnet,
@@ -65,17 +82,17 @@ async function createDeployment(deploymentParams) {
     serverUrl,
     deploymentId
   };
-  
+
   fs.writeFileSync(
     path.join(deploymentDir, 'docker-compose.yml'),
     generateDockerComposeContent(params)
   );
-  
+
   fs.writeFileSync(
     path.join(deploymentDir, 'Dockerfile'),
     generateDockerfileContent(params)
   );
-  
+
   return new Promise((resolve, reject) => {
     exec(`cd ${deploymentDir} && docker-compose up -d`, (error, stdout, stderr) => {
       if (error) {
@@ -83,13 +100,15 @@ async function createDeployment(deploymentParams) {
         reject(error);
         return;
       }
-      
-      if (stderr) {
-        console.error(`Error de docker-compose: ${stderr}`);
-      }
-      
+
       console.log(`Salida de docker-compose: ${stdout}`);
-      
+
+      try {
+        addPersistentKeepaliveToPeers(configDir);
+      } catch (editErr) {
+        console.error('Error editando peer .conf:', editErr);
+      }
+
       resolve({
         deploymentId,
         deploymentDir,
@@ -111,7 +130,7 @@ function removeDeployment(deploymentDir) {
         reject(error);
         return;
       }
-      
+
       resolve({ success: true, stdout, stderr });
     });
   });
@@ -119,26 +138,26 @@ function removeDeployment(deploymentDir) {
 
 function getPeerConfigurations(deploymentDir, deploymentId) {
   const configPath = path.join(deploymentDir, 'config');
-  
+
   if (!fs.existsSync(configPath)) {
     throw new Error('Directorio de configuración no encontrado');
   }
 
   const peerDirs = fs.readdirSync(configPath)
     .filter(dir => dir.startsWith('peer') && fs.statSync(path.join(configPath, dir)).isDirectory());
-  
+
   const peerConfigurations = [];
-  
+
   for (const peerDir of peerDirs) {
     const peerNumber = peerDir.replace('peer', '');
     const confFile = path.join(configPath, peerDir, `peer${peerNumber}.conf`);
     const qrCodeFile = path.join(configPath, peerDir, `peer${peerNumber}.png`);
-    
+
     if (fs.existsSync(confFile)) {
       const config = fs.readFileSync(confFile, 'utf8');
-      
+
       const hasQRCode = fs.existsSync(qrCodeFile);
-      
+
       peerConfigurations.push({
         peerNumber,
         config,
@@ -147,7 +166,7 @@ function getPeerConfigurations(deploymentDir, deploymentId) {
       });
     }
   }
-  
+
   return peerConfigurations;
 }
 

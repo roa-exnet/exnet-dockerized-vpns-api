@@ -5,7 +5,7 @@ const { initDatabase } = require('./config/database');
 const apiRoutes = require('./routes/api');
 
 const app = express();
-const port = 3000;
+const port = 3399;
 
 const DEPLOYMENTS_BASE_DIR = path.join(__dirname, 'deployments');
 

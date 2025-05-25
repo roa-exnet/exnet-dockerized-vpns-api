@@ -1,41 +1,417 @@
 {
-    "info": {
-      "name": "WireGuard VPN API",
-      "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  "info": {
+    "name": "VPN Deployment API",
+    "description": "API REST para gestión de despliegues VPN con WireGuard",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:3399",
+      "type": "string"
     },
-    "item": [
-      {
-        "name": "Crear nueva red VPN",
-        "request": {
-          "method": "POST",
-          "header": [{ "key": "Content-Type", "value": "application/json" }],
-          "body": {
-            "mode": "raw",
-            "raw": "{\n  \"peers\": 2,\n  \"networkName\": \"test-network\"\n}"
+    {
+      "key": "api_base",
+      "value": "{{base_url}}/api",
+      "type": "string"
+    },
+    {
+      "key": "deployment_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "network_name",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "peer_number",
+      "value": "1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Deployments",
+      "item": [
+        {
+          "name": "Create VPN Deployment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"peers\": 3,\n  \"networkName\": \"mi-red-corporativa\"\n}"
+            },
+            "url": {
+              "raw": "{{api_base}}/deploy",
+              "host": ["{{api_base}}"],
+              "path": ["deploy"]
+            },
+            "description": "Crea un nuevo despliegue VPN con WireGuard. Genera automáticamente el puerto VPN, configura SSL y crea el subdominio."
           },
-          "url": {
-            "raw": "http://localhost:3000/api/deploy",
-            "protocol": "http",
-            "host": ["localhost"],
-            "port": "3000",
-            "path": ["api", "deploy"]
-          }
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"peers\": 3,\n  \"networkName\": \"mi-red-corporativa\"\n}"
+                },
+                "url": {
+                  "raw": "{{api_base}}/deploy",
+                  "host": ["{{api_base}}"],
+                  "path": ["deploy"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"VPN, subdominio y SSL desplegados correctamente\",\n  \"deploymentId\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"domain\": \"exnet-instance-12345.exnet.cloud\",\n  \"internalIp\": \"192.168.1.100\",\n  \"vpnPort\": 25432\n}"
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.collectionVariables.set('deployment_id', response.deploymentId);",
+                  "    pm.collectionVariables.set('network_name', pm.request.body.raw ? JSON.parse(pm.request.body.raw).networkName : '');",
+                  "    console.log('Deployment ID guardado:', response.deploymentId);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Deployments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base}}/deployments",
+              "host": ["{{api_base}}"],
+              "path": ["deployments"]
+            },
+            "description": "Obtiene la lista de todos los despliegues VPN existentes."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{api_base}}/deployments",
+                  "host": ["{{api_base}}"],
+                  "path": ["deployments"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "[\n  {\n    \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n    \"directory_path\": \"/app/deployments/550e8400-e29b-41d4-a716-446655440000\",\n    \"network_name\": \"mi-red-corporativa\",\n    \"vpn_port\": 25432,\n    \"internal_subnet\": \"10.13.13.0/24\",\n    \"peers\": 3,\n    \"server_url\": \"exnet-instance-12345.exnet.cloud\",\n    \"created_at\": \"2025-05-25 10:30:00\"\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Get Deployment by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base}}/deployments/{{deployment_id}}",
+              "host": ["{{api_base}}"],
+              "path": ["deployments", "{{deployment_id}}"]
+            },
+            "description": "Obtiene los detalles de un despliegue específico por su ID."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{api_base}}/deployments/550e8400-e29b-41d4-a716-446655440000",
+                  "host": ["{{api_base}}"],
+                  "path": ["deployments", "550e8400-e29b-41d4-a716-446655440000"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"directory_path\": \"/app/deployments/550e8400-e29b-41d4-a716-446655440000\",\n  \"network_name\": \"mi-red-corporativa\",\n  \"vpn_port\": 25432,\n  \"internal_subnet\": \"10.13.13.0/24\",\n  \"peers\": 3,\n  \"server_url\": \"exnet-instance-12345.exnet.cloud\",\n  \"created_at\": \"2025-05-25 10:30:00\"\n}"
+            },
+            {
+              "name": "Not Found Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{api_base}}/deployments/invalid-id",
+                  "host": ["{{api_base}}"],
+                  "path": ["deployments", "invalid-id"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"Despliegue VPN no encontrado\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Deployment by Network Name",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base}}/networks/{{network_name}}",
+              "host": ["{{api_base}}"],
+              "path": ["networks", "{{network_name}}"]
+            },
+            "description": "Obtiene un despliegue específico por el nombre de la red."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{api_base}}/networks/mi-red-corporativa",
+                  "host": ["{{api_base}}"],
+                  "path": ["networks", "mi-red-corporativa"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"id\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"directory_path\": \"/app/deployments/550e8400-e29b-41d4-a716-446655440000\",\n  \"network_name\": \"mi-red-corporativa\",\n  \"vpn_port\": 25432,\n  \"internal_subnet\": \"10.13.13.0/24\",\n  \"peers\": 3,\n  \"server_url\": \"exnet-instance-12345.exnet.cloud\",\n  \"created_at\": \"2025-05-25 10:30:00\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Deployment",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{api_base}}/deployments/{{deployment_id}}",
+              "host": ["{{api_base}}"],
+              "path": ["deployments", "{{deployment_id}}"]
+            },
+            "description": "Elimina un despliegue VPN específico. Detiene los contenedores Docker y elimina la configuración."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{api_base}}/deployments/550e8400-e29b-41d4-a716-446655440000",
+                  "host": ["{{api_base}}"],
+                  "path": ["deployments", "550e8400-e29b-41d4-a716-446655440000"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"message\": \"Despliegue eliminado correctamente\"\n}"
+            }
+          ]
         }
-      },
-      {
-        "name": "Obtener peers por Deployment ID",
-        "request": {
-          "method": "GET",
-          "header": [],
-          "url": {
-            "raw": "http://localhost:3000/api/deployments/{{deploymentId}}/peers",
-            "protocol": "http",
-            "host": ["localhost"],
-            "port": "3000",
-            "path": ["api", "deployments", "{{deploymentId}}", "peers"]
-          }
+      ],
+      "description": "Endpoints para gestionar despliegues VPN (crear, listar, obtener detalles, eliminar)"
+    },
+    {
+      "name": "Peers Management",
+      "item": [
+        {
+          "name": "Get Peer Configurations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base}}/deployments/{{deployment_id}}/peers",
+              "host": ["{{api_base}}"],
+              "path": ["deployments", "{{deployment_id}}", "peers"]
+            },
+            "description": "Obtiene todas las configuraciones de peers para un despliegue específico, incluyendo archivos .conf y códigos QR."
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{api_base}}/deployments/550e8400-e29b-41d4-a716-446655440000/peers",
+                  "host": ["{{api_base}}"],
+                  "path": ["deployments", "550e8400-e29b-41d4-a716-446655440000", "peers"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"deploymentId\": \"550e8400-e29b-41d4-a716-446655440000\",\n  \"networkName\": \"mi-red-corporativa\",\n  \"totalPeers\": 3,\n  \"peers\": [\n    {\n      \"peerNumber\": \"1\",\n      \"config\": \"[Interface]\\nPrivateKey = aBcDeFgHiJkLmNoPqRsTuVwXyZ...\\nAddress = 10.13.13.2/32\\nDNS = 10.13.13.1\\n\\n[Peer]\\nPublicKey = 1234567890abcdef...\\nEndpoint = exnet-instance-12345.exnet.cloud:25432\\nAllowedIPs = 0.0.0.0/0\\nPersistentKeepalive = 25\\n\",\n      \"hasQRCode\": true,\n      \"qrCodePath\": \"/api/deployments/550e8400-e29b-41d4-a716-446655440000/peers/1/qrcode\"\n    },\n    {\n      \"peerNumber\": \"2\",\n      \"config\": \"[Interface]\\nPrivateKey = xYzAbCdEfGhIjKlMnOpQrStUvW...\\nAddress = 10.13.13.3/32\\nDNS = 10.13.13.1\\n\\n[Peer]\\nPublicKey = fedcba0987654321...\\nEndpoint = exnet-instance-12345.exnet.cloud:25432\\nAllowedIPs = 0.0.0.0/0\\nPersistentKeepalive = 25\\n\",\n      \"hasQRCode\": true,\n      \"qrCodePath\": \"/api/deployments/550e8400-e29b-41d4-a716-446655440000/peers/2/qrcode\"\n    },\n    {\n      \"peerNumber\": \"3\",\n      \"config\": \"[Interface]\\nPrivateKey = QrStUvWxYzAbCdEfGhIjKlMnOp...\\nAddress = 10.13.13.4/32\\nDNS = 10.13.13.1\\n\\n[Peer]\\nPublicKey = 0987654321fedcba...\\nEndpoint = exnet-instance-12345.exnet.cloud:25432\\nAllowedIPs = 0.0.0.0/0\\nPersistentKeepalive = 25\\n\",\n      \"hasQRCode\": true,\n      \"qrCodePath\": \"/api/deployments/550e8400-e29b-41d4-a716-446655440000/peers/3/qrcode\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "Download Peer QR Code",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{api_base}}/deployments/{{deployment_id}}/peers/{{peer_number}}/qrcode",
+              "host": ["{{api_base}}"],
+              "path": ["deployments", "{{deployment_id}}", "peers", "{{peer_number}}", "qrcode"]
+            },
+            "description": "Descarga el código QR de un peer específico para configuración fácil en dispositivos móviles."
+          },
+          "response": [
+            {
+              "name": "Success Response (PNG Image)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{api_base}}/deployments/550e8400-e29b-41d4-a716-446655440000/peers/1/qrcode",
+                  "host": ["{{api_base}}"],
+                  "path": ["deployments", "550e8400-e29b-41d4-a716-446655440000", "peers", "1", "qrcode"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "text",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "image/png"
+                }
+              ],
+              "body": "[Binary PNG data - QR Code image]"
+            },
+            {
+              "name": "Not Found Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{api_base}}/deployments/550e8400-e29b-41d4-a716-446655440000/peers/999/qrcode",
+                  "host": ["{{api_base}}"],
+                  "path": ["deployments", "550e8400-e29b-41d4-a716-446655440000", "peers", "999", "qrcode"]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"error\": \"Código QR no encontrado para este peer\"\n}"
+            }
+          ]
         }
+      ],
+      "description": "Endpoints para gestionar configuraciones de peers (obtener configuraciones, descargar códigos QR)"
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Script que se ejecuta antes de cada request",
+          "console.log('Ejecutando request en:', pm.request.url.toString());"
+        ]
       }
-    ]
-  }
-  
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Tests globales que se ejecutan después de cada request",
+          "pm.test('Response time is less than 5000ms', function () {",
+          "    pm.expect(pm.response.responseTime).to.be.below(5000);",
+          "});",
+          "",
+          "pm.test('Response has valid JSON or is binary', function () {",
+          "    const contentType = pm.response.headers.get('Content-Type');",
+          "    if (contentType && contentType.includes('application/json')) {",
+          "        pm.expect(() => pm.response.json()).to.not.throw();",
+          "    }",
+          "});"
+        ]
+      }
+    }
+  ]
+}
